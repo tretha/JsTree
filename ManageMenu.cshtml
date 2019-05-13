@@ -1,0 +1,194 @@
+﻿@model DataModel.BO.ProductTypesBO
+
+@{
+
+
+    ViewBag.Title = "ManageMenu";
+}
+@section css{
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+  
+}
+
+
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <h1>
+            Menus
+            <small>ManageMenu </small>
+        </h1>
+    </section>
+    <section class="content">
+
+        <div class="row">
+            <!-- right column -->
+            <div class="col-xs-12">
+                <!-- Horizontal Form -->
+                <div class="box box-info">
+                    <div class="box-header with-border">
+                        <button class="create">Add Node</button>
+                        <button class="rename" type="button"><i class="glyphicon glyphicon-pencil"></i> Rename</button>
+                        <button class="delete" type="button"><i class="glyphicon glyphicon-trash"></i> Delete</button>
+
+
+                    </div>
+
+              <div id="jstree">
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </section>
+</div>
+@section scripts{
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+
+    <script>
+        $.jstree.defaults.core.themes.variant = "large";
+
+        $('#jstree').jstree({
+
+
+            'core': {
+               
+              "check_callback": function (op, node, par, pos, more) {
+
+                    if (more && more.dnd) {
+                        return more.pos !== "i" && par.id == node.parent;
+                    }
+
+                    return true;
+
+                },
+
+                    'data': {
+                    'url': '/ProductTypes/Nodes',
+
+                    'data': function (node) {
+                        return { 'id': node.id };
+                    }
+                }
+            },
+            "plugins": ["dnd"]
+
+        });
+
+        $('#jstree').on('rename_node.jstree', function (e, data) {
+            var node = data.node;
+            var original = data.node.original
+            $.post("/ProductTypes/edit", { "id": node.id, "ProductType": node.text, "ParentID": node.parent, "MenuLevel": original.MenuLevel, "Position": original.position }, function (result) {
+
+                if (result.status == "1") {
+              
+                    location.href = "@Url.Action("ManageMenu", "ProductTypes")";
+                    showSaveSuccess();
+                    $('#jstree').jstree("refresh");
+                }
+                else {
+                    showSaveError();
+                }
+            })
+         });
+        $('#jstree').on('move_node.jstree', function (e, data) {
+            var node = data.node;
+            $.post("/ProductTypes/DragDrop", { "id": node.id, "ParentID": node.parent, "oldposition": data.old_position, "position": data.position }, function (result) {
+                  if (result.status == "1") {
+                
+                      location.href = "@Url.Action("ManageMenu", "ProductTypes")";
+                      showSaveSuccess();
+                  
+                }
+                else {
+                    showSaveError();
+                }
+            })
+         })
+
+        $('#jstree').on('delete_node.jstree', function (e, data) {
+            var node = data.node;
+            $.post("/ProductTypes/Delete", { "id": node.id, "ProductType": node.text, "ParentID": node.parent }, function (result) {
+           if (result.status == "1") {
+               showSaveSuccess();
+                    $('#jstree').jstree("refresh");
+                }
+                else {
+                    showSaveError();
+                }
+            })
+        });
+
+        $('button.create').click(function () {
+
+            var parentid = null;
+            var ref = $('#jstree').jstree(true),
+                sel = ref.get_selected();
+            if (sel.length) {
+                sel = sel[0];
+                parentid = sel;
+              }
+
+            $("#jstree").jstree("create_node", parentid, null, "last", function (node) {
+                this.edit(node);
+            });
+        });
+        
+        $('button.rename').click(function () {
+            var ref = $('#jstree').jstree(true),
+            sel = ref.get_selected();
+            if (!sel.length) { return false; }
+            sel = sel[0];
+            ref.edit(sel);
+
+        });
+        $('button.delete').click(function () {
+            var ref = $('#jstree').jstree(true),
+            sel = ref.get_selected();
+            if (!sel.length) { return false; }
+            sel = sel[0];
+            ref.delete_node(sel);
+        });
+
+        function demo_rename() {
+
+            var ref = $('#jstree').jstree(true),
+                sel = ref.get_selected();
+            if (!sel.length) { return false; }
+            ref.delete_node(sel);
+        };
+
+        function demo_delete() {
+            var ref = $('#jstree').jstree(true),
+                sel = ref.get_selected();
+            if (!sel.length) { return false; }
+            ref.delete_node(sel);
+        };
+
+        $("#jstree").on(
+            "select_node.jstree", function (evt, data) {
+                var node = data.node;
+                if (node.parent == "#") {
+                 
+                    $('button.rename').hide();
+                    $('button.delete').hide();
+                }
+                else {
+                  
+                    $('button.rename').show();
+                    $('button.delete').show();
+                }
+                
+            }
+        );
+
+
+
+    </script>
+
+}
+
+
+
